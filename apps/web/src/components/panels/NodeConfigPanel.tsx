@@ -148,7 +148,7 @@ export function NodeConfigPanel() {
 
   const selectedIntegration = integrations.find((i: any) => i.id === data.integrationId);
   const selectedOperation = selectedIntegration?.operations?.find(
-    (op: any) => op.id === (data.operation ?? data.operationId)
+    (op: any) => op.id === data.operationId
   );
 
   return (
@@ -157,7 +157,7 @@ export function NodeConfigPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <div>
           <div className="text-sm font-semibold text-gray-100">{data.label}</div>
-          <div className="text-xs text-gray-500 capitalize">{(data.nodeType ?? data.type ?? "").toLowerCase()}</div>
+          <div className="text-xs text-gray-500 capitalize">{(data.nodeType ?? "").toLowerCase()}</div>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -189,7 +189,7 @@ export function NodeConfigPanel() {
         </div>
 
         {/* ── TRIGGER ── */}
-        {(data.nodeType === "TRIGGER" || data.type === "TRIGGER") && (
+        {data.nodeType === "TRIGGER" && (
           <>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Tetikleyici Tipi</label>
@@ -226,7 +226,7 @@ export function NodeConfigPanel() {
         )}
 
         {/* ── ACTION ── */}
-        {(data.nodeType === "ACTION" || data.type === "ACTION") && (
+        {data.nodeType === "ACTION" && (
           <>
             {/* Entegrasyon seç */}
             <div>
@@ -236,7 +236,6 @@ export function NodeConfigPanel() {
                 onChange={(e) =>
                   updateNodeData(node.id, {
                     integrationId: e.target.value,
-                    operation: undefined,
                     operationId: undefined,
                     parameters: {},
                   })
@@ -259,7 +258,7 @@ export function NodeConfigPanel() {
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Credential</label>
                 <CredentialSelect
-                  integrationId={data.integrationId}
+                  integrationId={data.integrationId ?? ""}
                   value={String(data.credentialId ?? "")}
                   onChange={(v) => updateNodeData(node.id, { credentialId: v })}
                 />
@@ -271,9 +270,9 @@ export function NodeConfigPanel() {
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Operasyon</label>
                 <select
-                  value={data.operation ?? data.operationId ?? ""}
+                  value={data.operationId ?? ""}
                   onChange={(e) =>
-                    updateNodeData(node.id, { operation: e.target.value, operationId: e.target.value, parameters: {} })
+                    updateNodeData(node.id, { operationId: e.target.value, parameters: {} })
                   }
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-brand-500"
                 >
@@ -328,7 +327,7 @@ export function NodeConfigPanel() {
         )}
 
         {/* ── CONDITION ── */}
-        {(data.nodeType === "CONDITION" || data.type === "CONDITION") && (
+        {data.nodeType === "CONDITION" && (
           <>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Alan</label>
@@ -371,7 +370,7 @@ export function NodeConfigPanel() {
         )}
 
         {/* ── AI AGENT ── */}
-        {(data.nodeType === "AI_AGENT" || data.type === "AI_AGENT") && (
+        {data.nodeType === "AI_AGENT" && (
           <>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Sistem Promptu</label>
@@ -406,6 +405,40 @@ export function NodeConfigPanel() {
             <div className="bg-purple-500/5 rounded-lg p-3 border border-purple-500/20 text-xs text-gray-500">
               Model, Memory ve Tool node'larını canvas'ta bu node'a bağlayın.
               Bağlantı yönü: Model/Memory/Tool → AI Agent (sol handle'lar).
+            </div>
+          </>
+        )}
+
+        {/* ── LOOP ── */}
+        {data.nodeType === "LOOP" && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Dizi Alanı</label>
+              <input
+                placeholder="businesses veya results.items"
+                value={String(params.arrayField ?? "")}
+                onChange={(e) => setParam("arrayField", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 font-mono focus:outline-none focus:border-brand-500"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Önceki node çıktısındaki hangi dizi alanı üzerinde döneceğini belirler. Boş bırakılırsa tüm çıktı dizi olarak kullanılır.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Maks. Eleman</label>
+              <input
+                type="number"
+                min={1} max={1000}
+                placeholder="100"
+                value={String(params.maxItems ?? "")}
+                onChange={(e) => setParam("maxItems", e.target.value === "" ? "" : Number(e.target.value))}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+            <div className="bg-cyan-500/5 rounded-lg p-3 border border-cyan-500/20 text-xs text-gray-500 space-y-1">
+              <div><span className="text-cyan-400 font-mono">{"{{ $item }}"}</span> — mevcut eleman</div>
+              <div><span className="text-cyan-400 font-mono">{"{{ $index }}"}</span> — sıra (0'dan başlar)</div>
+              <div><span className="text-cyan-400 font-mono">{"{{ $total }}"}</span> — toplam eleman sayısı</div>
             </div>
           </>
         )}

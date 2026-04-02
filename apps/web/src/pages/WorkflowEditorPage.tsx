@@ -8,7 +8,7 @@ import { NodeConfigPanel } from "../components/panels/NodeConfigPanel";
 import { ExecutionPanel } from "../components/panels/ExecutionPanel";
 import { useWorkflowStore } from "../stores/workflowStore";
 import { useWorkflowSave } from "../hooks/useWorkflowSave";
-import { getWorkflow, executeWorkflow } from "../services/api";
+import { getWorkflow, getWorkflowGraph, executeWorkflow } from "../services/api";
 
 export function WorkflowEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,26 +27,53 @@ export function WorkflowEditorPage() {
     enabled: !!id,
   });
 
+  const { data: graphData } = useQuery({
+    queryKey: ["workflow-graph", id],
+    queryFn: () => getWorkflowGraph(id!),
+    enabled: !!id,
+  });
+
   useEffect(() => {
     if (workflow) {
-      setWorkflow(workflow.id, workflow.name, workflow.active);
-      const nodes = (workflow.nodes ?? []).map((n: any) => ({
-        id: n.id,
-        type: (n.type as string).toLowerCase().replace("_", "-"),
-        position: n.position ?? { x: 100, y: 100 },
-        data: n.data ?? { label: n.name, nodeType: n.type },
+      setWorkflow(workflow.id, workflow.name, workflow.isActive);
+    }
+  }, [workflow]);
+
+  useEffect(() => {
+    if (graphData) {
+      const nodes = (graphData.nodes ?? []).map((n: any) => ({
+        id: n.rfId,
+        type: (n.type as string).toLowerCase().replace(/_/g, "-"),
+        position: { x: n.positionX, y: n.positionY },
+        data: {
+          label: n.label,
+          nodeType: n.type,
+          integrationId: n.integrationId,
+          operationId: n.operation,
+          credentialId: (n.config as any)?.credentialId,
+          parameters: (n.config as any)?.parameters ?? {},
+          triggerType: (n.config as any)?.triggerType,
+          webhookPath: (n.config as any)?.webhookPath,
+        },
       }));
-      const edges = (workflow.edges ?? []).map((e: any) => ({
-        id: e.id,
-        source: e.sourceNodeId,
-        target: e.targetNodeId,
+      const edges = (graphData.edges ?? []).map((e: any) => ({
+        id: e.rfId,
+        source: e.sourceNodeRfId,
+        target: e.targetNodeRfId,
         sourceHandle: e.sourceHandle,
         animated: true,
         style: { stroke: "#4F6EF7", strokeWidth: 2 },
+        label: e.label,
+        labelStyle: { fill: "#fff", fontWeight: 600, fontSize: 11 },
+        labelBgStyle: {
+          fill: e.sourceHandle === "true" ? "#22c55e" : e.sourceHandle === "false" ? "#ef4444" : "#4F6EF7",
+          rx: 4,
+          ry: 4,
+        },
       }));
       loadGraph(nodes, edges);
     }
-  }, [workflow]);
+  }, [graphData]);
 
   const executeMutation = useMutation({
     mutationFn: () => executeWorkflow(id!),

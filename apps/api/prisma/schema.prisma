@@ -76,6 +76,7 @@ enum NodeType {
   AI_MODEL
   AI_MEMORY
   AI_TOOL
+  LOOP
 }
 
 // ─── KENAR (EDGE) ─────────────────────────────────────────────────────────────

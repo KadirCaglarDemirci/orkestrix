@@ -14,12 +14,13 @@ import {
 export interface FlowNode extends Node {
   data: {
     label: string;
-    nodeType: "TRIGGER" | "ACTION" | "CONDITION" | "AI_AGENT" | "AI_MODEL" | "AI_MEMORY" | "AI_TOOL";
+    nodeType: "TRIGGER" | "ACTION" | "CONDITION" | "AI_AGENT" | "AI_MODEL" | "AI_MEMORY" | "AI_TOOL" | "LOOP";
     integrationId?: string;
     operationId?: string;
     parameters?: Record<string, unknown>;
     credentialId?: string;
     triggerType?: string;
+    webhookPath?: string;
     // AI Agent specific
     modelNodeId?: string;
     memoryNodeId?: string;
