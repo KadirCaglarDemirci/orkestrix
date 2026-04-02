@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── KULLANICI ────────────────────────────────────────────────────────────────
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  workflows    Workflow[]
+  credentials  Credential[]
+  executions   Execution[]
+}
+
+// ─── İŞ AKIŞI ─────────────────────────────────────────────────────────────────
+model Workflow {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean   @default(false)
+  settings    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  nodes      WorkflowNode[]
+  edges      WorkflowEdge[]
+  executions Execution[]
+  triggers   WorkflowTrigger[]
+}
+
+// ─── DÜĞÜM (NODE) ─────────────────────────────────────────────────────────────
+model WorkflowNode {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  rfId          String
+  type          NodeType
+  integrationId String?
+  operation     String?
+  label         String
+  positionX     Float
+  positionY     Float
+  config        Json     @default("{}")
+
+  parentNodeId String?
+  parentNode   WorkflowNode?  @relation("NodeHierarchy", fields: [parentNodeId], references: [id])
+  childNodes   WorkflowNode[] @relation("NodeHierarchy")
+
+  executionLogs ExecutionLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workflowId, rfId])
+  @@index([workflowId])
+}
+
+enum NodeType {
+  TRIGGER
+  ACTION
+  CONDITION
+  AI_AGENT
+  AI_MODEL
+  AI_MEMORY
+  AI_TOOL
+}
+
+// ─── KENAR (EDGE) ─────────────────────────────────────────────────────────────
+model WorkflowEdge {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  rfId           String
+  sourceNodeRfId String
+  sourceHandle   String?
+  targetNodeRfId String
+  targetHandle   String?
+  label          String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([workflowId, rfId])
+  @@index([workflowId])
+}
+
+// ─── TETİKLEYİCİ ──────────────────────────────────────────────────────────────
+model WorkflowTrigger {
+  id         String      @id @default(cuid())
+  workflowId String
+  workflow   Workflow    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  type        TriggerType
+  config      Json        @default("{}")
+  webhookPath String?     @unique
+  isActive    Boolean     @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum TriggerType {
+  WEBHOOK
+  SCHEDULE
+  FORM_SUBMISSION
+  MANUAL
+  EMAIL
+  POLLING
+}
+
+// ─── UYGULAMA / YÜRÜTME ───────────────────────────────────────────────────────
+model Execution {
+  id         String          @id @default(cuid())
+  workflowId String
+  workflow   Workflow        @relation(fields: [workflowId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  status       ExecutionStatus @default(PENDING)
+  mode         ExecutionMode   @default(MANUAL)
+  inputData    Json?
+  outputData   Json?
+  errorMessage String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  logs ExecutionLog[]
+
+  @@index([workflowId, status])
+  @@index([workflowId, createdAt])
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+  WAITING
+}
+
+enum ExecutionMode {
+  MANUAL
+  TRIGGER
+  RETRY
+  TEST
+}
+
+// ─── UYGULAMA LOGU ────────────────────────────────────────────────────────────
+model ExecutionLog {
+  id          String    @id @default(cuid())
+  executionId String
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  nodeId String
+  node   WorkflowNode @relation(fields: [nodeId], references: [id])
+
+  status       LogStatus
+  inputData    Json?
+  outputData   Json?
+  errorMessage String?
+  duration     Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([executionId])
+}
+
+enum LogStatus {
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+// ─── KİMBİLGİSİ / CREDENTIALS ────────────────────────────────────────────────
+model Credential {
+  id            String @id @default(cuid())
+  name          String
+  integrationId String
+
+  encryptedData String
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, integrationId])
+}

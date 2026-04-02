@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-gray-950 text-gray-100 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* ReactFlow overrides */
+.react-flow__node {
+  font-family: inherit;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__controls {
+  @apply bg-gray-800 border border-gray-700 rounded-lg shadow-xl;
+}
+
+.react-flow__controls-button {
+  @apply bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 !important;
+}
+
+.react-flow__minimap {
+  @apply bg-gray-900 border border-gray-700 rounded-lg !important;
+}
+
+.react-flow__background {
+  @apply bg-gray-950;
+}
